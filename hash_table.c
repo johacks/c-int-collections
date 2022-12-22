@@ -76,23 +76,13 @@ static int hash_table_allocate_table(HashTable *hash_table)
 
 static void hash_table_free_entry(HashTable *hash_table, HashTableEntry *entry)
 {
-
-    /* If there is a function registered for freeing values, use it */
-
-    if (hash_table->value_free_func != NULL)
-    {
-        hash_table->value_free_func(entry->pair.value);
-    }
-
-    /* Free the data structure */
-
+    list_free(entry->pair.values);
     free(entry);
 }
 
 HashTable *hash_table_init(HashTable *hash_table, HashTableValueFreeFunc value_free_func)
 {
 
-    hash_table->value_free_func = NULL;
     hash_table->entries = 0;
     hash_table->prime_index = 0;
 
@@ -198,7 +188,7 @@ static int hash_table_enlarge(HashTable *hash_table)
     return 1;
 }
 
-int hash_table_insert(HashTable *hash_table, int key, void *value)
+int hash_table_insert(HashTable *hash_table, int key, int value)
 {
     HashTableEntry *rover;
     HashTablePair *pair;
@@ -241,23 +231,9 @@ int hash_table_insert(HashTable *hash_table, int key, void *value)
 
         if (pair->key == key)
         {
-
-            /* Same key: overwrite this entry with new data */
-
-            /* If there is a value free function, free the old data
-             * before adding in the new data */
-
-            if (hash_table->value_free_func != NULL)
-            {
-                hash_table->value_free_func(pair->value);
-            }
-
+            /* Same key: add to linked list new item */
             pair->key = key;
-            pair->value = value;
-
-            /* Finished */
-
-            return 1;
+            return list_insert(pair->values, value);
         }
 
         rover = rover->next;
@@ -266,14 +242,18 @@ int hash_table_insert(HashTable *hash_table, int key, void *value)
     /* Not in the hash table yet.  Create a new entry */
 
     newentry = (HashTableEntry *)malloc(sizeof(HashTableEntry));
-
     if (newentry == NULL)
+        return 0;
+
+    newentry->pair.values = list_new();
+    if (!newentry->pair.values)
     {
+        free(newentry);
         return 0;
     }
 
     newentry->pair.key = key;
-    newentry->pair.value = value;
+    if (!list_insert(newentry->pair.values, value)) return 0;
 
     /* Link into the list */
 
@@ -289,7 +269,7 @@ int hash_table_insert(HashTable *hash_table, int key, void *value)
     return 1;
 }
 
-void *hash_table_lookup(HashTable *hash_table, int key)
+List *hash_table_lookup(HashTable *hash_table, int key)
 {
     HashTableEntry *rover;
     HashTablePair *pair;
@@ -309,12 +289,7 @@ void *hash_table_lookup(HashTable *hash_table, int key)
         pair = &(rover->pair);
 
         if (key == pair->key)
-        {
-
-            /* Found the entry.  Return the data. */
-
-            return pair->value;
-        }
+            return pair->values;
 
         rover = rover->next;
     }

@@ -45,6 +45,7 @@ int list_insert(List *list, int data)
     node->data = data;
     node->next = list->head;
     list->head = node;
-
+    list->size += 1;
+    
     return 1;
 }

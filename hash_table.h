@@ -14,6 +14,7 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "list.h"
 
 #ifndef ALGORITHM_HASH_TABLE_H
 #define ALGORITHM_HASH_TABLE_H
@@ -32,7 +33,7 @@ extern "C"
     typedef struct _HashTablePair
     {
         int key;
-        void *value;
+        List *values;
     } HashTablePair;
 
     struct _HashTableIterator
@@ -52,7 +53,6 @@ extern "C"
     {
         HashTableEntry **table;
         unsigned int table_size;
-        HashTableValueFreeFunc value_free_func;
         unsigned int entries;
         unsigned int prime_index;
     };
@@ -70,15 +70,13 @@ extern "C"
 
     typedef void (*HashTableValueFreeFunc)(void *value);
 
-    HashTable *hash_table_new(HashTableValueFreeFunc value_free_func);
+    HashTable *hash_table_new();
 
     void hash_table_free(HashTable *hash_table);
 
-    int hash_table_insert(HashTable *hash_table,
-                          int key,
-                          void *value);
+    int hash_table_insert(HashTable *hash_table, int key, int value);
 
-    void *hash_table_lookup(HashTable *hash_table, int key);
+    List *hash_table_lookup(HashTable *hash_table, int key);
 
     int hash_table_remove(HashTable *hash_table, int key);
 
